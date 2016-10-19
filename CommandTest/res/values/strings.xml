@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">CommandTest</string>
+    <string name="hello_world">Hello world!</string>
+    
+    <!-- direction -->
+    <string name="left">left</string>
+    <string name="right">right</string>
+    <string name="slash">slash</string>
+
+</resources>
