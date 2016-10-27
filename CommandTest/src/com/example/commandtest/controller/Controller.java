@@ -16,7 +16,9 @@ import com.example.commandtest.R;
 public class Controller implements OnTouchListener, OnClickListener {
 
 	/*
-	 * 1. 1000/30 이런거 변수로 빼야됨. 2. test 코드만들 방법
+	 * 1. 1000/30 이런거 변수로 빼야됨. 
+	 * 2. test 코드만들 방법
+	 * 3. 1210 이런거 내 단말에만 유효한 숫자임.
 	 */
 
 	private static final int MOVE_LEFT = 0;
@@ -29,21 +31,15 @@ public class Controller implements OnTouchListener, OnClickListener {
 	private boolean pressed;
 	private MoveThread thread;
 	private SlashHandler handler;
+	
+	private int color;
 
 	public Controller(MainActivity activity) {
 		this.activity = activity;
-
-		btn = new View[2];
-		this.btn[0] = activity.findViewById(R.id.move);
-		this.btn[1] = activity.findViewById(R.id.slash);
-
-		this.btn[0].setOnTouchListener(this);
-		this.btn[1].setOnClickListener(this);
-
-		this.man = activity.findViewById(R.id.man);
-
 		this.thread = new MoveThread();
 		this.handler = new SlashHandler();
+		
+		btn = new View[2];
 	}
 
 	@Override
@@ -106,6 +102,7 @@ public class Controller implements OnTouchListener, OnClickListener {
 	public void onClick(View v) {
 		man.setBackgroundColor(Color.RED);
 		handler.sendEmptyMessageDelayed(0, 1000 / 30 * 10);
+		activity.setPlayerPosition();
 	}
 
 	private boolean canMove(float x) {
@@ -135,10 +132,10 @@ public class Controller implements OnTouchListener, OnClickListener {
 
 		switch (direction) {
 		case MOVE_LEFT:
-			x -= 10;
+			x -= 20;
 			break;
 		case MOVE_RIGHT:
-			x += 10;
+			x += 20;
 			break;
 		default:
 			break;
@@ -179,7 +176,19 @@ public class Controller implements OnTouchListener, OnClickListener {
 	private class SlashHandler extends Handler {
 		@Override
 		public void handleMessage(Message msg) {
-			man.setBackgroundColor(Color.GREEN);
+			man.setBackgroundColor(color);
 		}
+	}
+
+	public void setPlayer(int controllerID, int manID, boolean left, int color) {
+		View root = activity.findViewById(controllerID);
+		this.man = activity.findViewById(manID);
+		this.color = color;
+		
+		this.btn[0] = root.findViewById(R.id.move);
+		this.btn[1] = root.findViewById(R.id.slash);
+
+		this.btn[0].setOnTouchListener(this);
+		this.btn[1].setOnClickListener(this);
 	}
 }

@@ -1,22 +1,43 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:weightSum="5"
     tools:context="${relativePackage}.${activityClass}" >
 
-    <FrameLayout
+    <include
+        android:id="@+id/controller_1p"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="4" >
+        android:layout_weight="1"
+        layout="@layout/controller" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="3dp"
+        android:background="@color/black" />
+
+    <FrameLayout
+        android:id="@+id/field"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="3" >
 
         <TextView
-            android:id="@+id/man"
+            android:id="@+id/man_1p"
             android:layout_width="30dp"
             android:layout_height="30dp"
-            android:layout_gravity="center"
+            android:layout_gravity="center_vertical"
             android:background="@color/green" />
+
+        <TextView
+            android:id="@+id/man_2p"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_gravity="center_vertical"
+            android:background="@color/blue" />
     </FrameLayout>
 
     <View
@@ -25,6 +46,7 @@
         android:background="@color/black" />
 
     <include
+        android:id="@+id/controller_2p"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
