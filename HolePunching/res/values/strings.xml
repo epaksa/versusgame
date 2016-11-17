@@ -2,6 +2,7 @@
 <resources>
 
     <string name="app_name">HolePunching</string>
-    <string name="hello_world">Hello world!</string>
+    <string name="hello_world">connect</string>
+    <string name="send">send</string>
 
 </resources>

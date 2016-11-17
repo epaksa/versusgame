@@ -7,95 +7,153 @@ import java.net.InetAddress;
 import java.net.SocketException;
 
 import android.app.Activity;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.View;
-import android.view.ViewGroup;
+import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 public class MainActivity extends Activity {
 
 	public static final int PORT = 5678;
 	public static final int BUF_SIZE = 65507;
-	public static final String IP = "52.78.185.203";
+	
+	public static final String PREFERENCE_NAME = "ip";
+	public static final String PREFERENCE_KEY = "saved";
 
 	DatagramSocket ds;
-	String msg;
-	ViewGroup root;
+	String peerInfo;
+	LinearLayout content;
+	Handler handler;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-		root = (ViewGroup) findViewById(R.id.root);
+		
+		content = (LinearLayout) findViewById(R.id.content);
+		
+		setIP();
+		
+		handler = new Handler();
+	}
 
-		AsyncTask.execute(new Runnable() {
+	private void setIP() {
+		SharedPreferences preference = getSharedPreferences(PREFERENCE_NAME, 0);
+		String savedIP = preference.getString(PREFERENCE_KEY, "");
+		
+		EditText edit = (EditText) findViewById(R.id.ip);
+		edit.setText(savedIP);
+	}
 
+	public void click(View v) {
+		switch (v.getId()) {
+		case R.id.set_ip:
+			String ip = getIP();
+			connectToServer(ip);
+			v.setEnabled(false);
+			findViewById(R.id.ip).setEnabled(false);
+			break;
+			
+		case R.id.send:
+			send();
+			break;
+
+		default:
+			break;
+		}
+	}
+
+	private void send() {
+		EditText edit = (EditText) findViewById(R.id.message);
+		final String msg = edit.getText().toString().trim();
+		
+		Thread sendThread = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					sendToClient(msg);
+				} catch (IOException e) {
+					e.printStackTrace();
+				} 
+			}
+		});
+		
+		sendThread.start();
+	}
+
+	private void connectToServer(final String ip) {
+		Thread serverThread = new Thread(new Runnable() {
 			@Override
 			public void run() {
 				try {
 					ds = new DatagramSocket(PORT);
 
-					sendToServer(ds);
-					msg = receive(ds);
+					sendToServer(ip);
+					peerInfo = receive();
+					sendToClient("initial msg");
+					
+					while(true){
+						receive();
+					}
 				} catch (SocketException e) {
 					e.printStackTrace();
 				} catch (IOException e) {
 					e.printStackTrace();
-				} finally {
-					if (ds != null)
-						ds.close();
-				}
+				} 
 			}
 		});
-
+		
+		serverThread.start();
 	}
 
-	public void click(View v) {
-		AsyncTask.execute(new Runnable() {
-
-			@Override
-			public void run() {
-				try {
-					receive(ds);
-					sendToClient(ds, msg);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		});
-		// receive(ds);
+	private String getIP() {
+		EditText edit = (EditText) findViewById(R.id.ip);
+		String ip = edit.getText().toString().trim(); 
+		
+		SharedPreferences.Editor editor = getSharedPreferences(PREFERENCE_NAME, 0).edit();
+		editor.putString(PREFERENCE_KEY, ip);
+		editor.commit();
+		
+		return ip;
 	}
 
-	private void sendToClient(DatagramSocket ds, String msg) throws IOException {
-		String[] split = msg.split(":");
-		String otherClientIP = split[0];
+	private void sendToClient(String msg) throws IOException {
+		String[] split = peerInfo.split(":");
+		String otherClientIP = split[0]; 
 		String otherClientPort = split[1];
 		InetAddress ip = InetAddress.getByName(otherClientIP);
 		int port = Integer.parseInt(otherClientPort.trim());
-
+		
 		// send
-		byte[] buffer = "hello".getBytes();
+		byte[] buffer = msg.getBytes();
 		DatagramPacket dp = new DatagramPacket(buffer, 0, buffer.length, ip, port);
 		ds.send(dp);
+		
+		print("send ("+msg+") to "+ip.getHostAddress()+":"+port);
 	}
 
-	private String receive(DatagramSocket ds) throws IOException {
+	private String receive() throws IOException {
 		byte[] buffer = new byte[BUF_SIZE];
 		DatagramPacket dp = new DatagramPacket(buffer, 0, BUF_SIZE);
 		ds.receive(dp);
-
+		
 		String receivedIp = dp.getAddress().getHostAddress();
 		int receivedPort = dp.getPort();
 		String receivedMsg = new String(dp.getData());
-
-		print("*** received! ***\nip:port - " + receivedIp + ":" + receivedPort + "\nmsg : " + receivedMsg);
+		
+		peerInfo = receivedIp+":"+receivedPort;
+		
+		print("msg : "+receivedMsg+" ("+receivedIp+":"+receivedPort+")");
 
 		return receivedMsg;
 	}
 
-	private void sendToServer(DatagramSocket ds) throws IOException {
-		InetAddress server = InetAddress.getByName(IP);
+	private void sendToServer(String ip) throws IOException {
+		InetAddress server = InetAddress.getByName(ip);
 		byte[] msg = "This is message..".getBytes();
 
 		DatagramPacket dp = new DatagramPacket(msg, 0, msg.length, server, PORT);
@@ -108,8 +166,14 @@ public class MainActivity extends Activity {
 			public void run() {
 				TextView t = new TextView(MainActivity.this);
 				t.setText(msg);
-				root.addView(t);
+				content.addView(t);
 			}
 		});
+	}
+	
+	@Override
+	protected void onPause() {
+		super.onPause();
+		if(ds != null) ds.close();
 	}
 }
