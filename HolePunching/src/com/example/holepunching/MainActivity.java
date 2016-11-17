@@ -8,9 +8,7 @@ import java.net.SocketException;
 
 import android.app.Activity;
 import android.content.SharedPreferences;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -27,7 +25,6 @@ public class MainActivity extends Activity {
 	DatagramSocket ds;
 	String peerInfo;
 	LinearLayout content;
-	Handler handler;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -37,8 +34,6 @@ public class MainActivity extends Activity {
 		content = (LinearLayout) findViewById(R.id.content);
 		
 		setIP();
-		
-		handler = new Handler();
 	}
 
 	private void setIP() {
