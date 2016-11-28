@@ -3,8 +3,11 @@ package com.example.holepunching;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.util.Enumeration;
 
 import android.app.Activity;
 import android.content.SharedPreferences;
@@ -115,13 +118,33 @@ public class MainActivity extends Activity {
 		print("### sent my information to server("+ip+") ###");
 		
 		InetAddress server = InetAddress.getByName(ip);
-		String localIP = InetAddress.getLocalHost().getHostAddress();
+		String localIP = getMyIp();
 		byte[] msg = ("hello, my private IP is "+localIP).getBytes();
 		
 		DatagramPacket dp = new DatagramPacket(msg, 0, msg.length, server, PORT);
 		ds.send(dp);
 	}
 	
+	private String getMyIp() {
+		String result = "";
+		
+		try {
+			for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
+				NetworkInterface intf = en.nextElement();
+				for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements();) {
+					InetAddress inetAddress = enumIpAddr.nextElement();
+					if(!inetAddress.isLoopbackAddress() && inetAddress instanceof Inet4Address) {
+						result = inetAddress.getHostAddress().toString();
+					}
+				}
+			}
+		} catch (SocketException ex) {
+			ex.printStackTrace();
+		}
+		
+		return result;
+	}
+
 	private User receiveFromServer() throws IOException {
 		byte[] buffer = new byte[BUF_SIZE];
 		DatagramPacket dp = new DatagramPacket(buffer, 0, BUF_SIZE);
@@ -134,17 +157,18 @@ public class MainActivity extends Activity {
 		print("### received peer's information from server("+receivedIp+":"+receivedPort+") ###"
 				+NEW_LINE+ "peer's information : "+receivedMsg);
 		
-		User result = null;
-		if(receivedMsg.contains(":")){	// port가 없으면 same NAT.
-			String[] peerInfo = receivedMsg.split(":");
-			String ip = peerInfo[0];
-			int port = Integer.parseInt(peerInfo[1].trim());
-			result = new User(ip, port);
-		}else{
-			result = new User(receivedMsg);
+		boolean sameNAT = false;
+		if(receivedMsg.contains("same")){
+			String[] splited = receivedMsg.split("same");
+			receivedMsg = splited[0];
+			sameNAT = true;
 		}
 		
-		return result;
+		String[] peerInfo = receivedMsg.split(":");
+		String ip = peerInfo[0];
+		int port = Integer.parseInt(peerInfo[1].trim());
+		
+		return new User(ip, port, sameNAT);
 	}
 
 	private void holePunch() throws IOException {
@@ -160,7 +184,7 @@ public class MainActivity extends Activity {
 	}
 
 	private void sendToPeer(String msg) throws IOException {
-		InetAddress ip = InetAddress.getByName(peer.isSameNAT() ? peer.privateIp : peer.ip);
+		InetAddress ip = InetAddress.getByName(peer.ip);
 		int port = peer.port;
 		byte[] buffer = msg.getBytes();
 		
@@ -181,9 +205,7 @@ public class MainActivity extends Activity {
 		
 		/* 서버가 보내준 peer의 port와 실제 peer에게 응답받은 port가 다를 수 있음.
 		 * peer에게 응답받은 port로 update해야함. */
-		if(!peer.isSameNAT()){
-			peer = new User(receivedIp, receivedPort);
-		}
+		peer = new User(receivedIp, receivedPort, peer.isSameNAT() ? true : false);
 		
 		print("[RECEIVED] "+receivedMsg+" ("+receivedIp+":"+receivedPort+")");
 		
