@@ -14,7 +14,6 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.example.holepunching.data.User;
@@ -30,14 +29,14 @@ public class MainActivity extends Activity {
 
 	User peer;
 	DatagramSocket ds;
-	LinearLayout content;
+	TextView content;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		
-		content = (LinearLayout) findViewById(R.id.content);
+		content = (TextView) findViewById(R.id.content);
 		
 		setIP();
 	}
@@ -216,9 +215,8 @@ public class MainActivity extends Activity {
 		runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				TextView t = new TextView(MainActivity.this);
-				t.setText(msg);
-				content.addView(t);
+				String printStr = content.getText()+NEW_LINE+msg;
+				content.setText(printStr);
 			}
 		});
 	}
